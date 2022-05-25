@@ -81,23 +81,22 @@ def gitstats(update, context):
                     if x in times:
                         y = datetime.strptime(y, "%Y-%m-%dT%H:%M:%SZ")
 
-                    if y not in empty and not "Bio" or "Blog":
-                        if x == "Blog":
-                            x = "Website"
-                            y = f"[Here!]({y})"
-                            text += "\n*{}:* {}".format(x, y)
-                        elif x in [
-                            "Bio",
-                            "Account created at",
-                            "Last updated",
-                        ]:
-                            text += "\n*{}:* \n`{}`".format(x, y)
-                        else:
-                            text += "\n*{}:* `{}`".format(x, y)
+                    if x == "Blog":
+                        x = "Website"
+                        y = f"[Here!]({y})"
+                        text += "\n*{}:* {}".format(x, y)
+                    elif x in [
+                        "Bio",
+                        "Account created at",
+                        "Last updated",
+                    ]:
+                        text += "\n*{}:* \n`{}`".format(x, y)
+                    else:
+                        text += "\n*{}:* `{}`".format(x, y)
 
             chat = update.effective_chat
             dispatcher.bot.send_photo(
-                "{}".format(chat.id),
+                f"{chat.id}",
                 f"{usr['html_url']}",
                 caption=text,
                 parse_mode=ParseMode.MARKDOWN,
@@ -112,6 +111,7 @@ def gitstats(update, context):
                     ]
                 ),
             )
+
         except KeyError:
             return message.reply_text(
                 "*User/Organization not found!* \nMake sure to enter a valid username.",
@@ -138,22 +138,21 @@ def repo(update, context):
             f"https://api.github.com/users/{user}/repos?per_page=40"
         ).json()
 
-        if len(usr_data) != 0:
-            reply_text = f"*{user}*" + f"'s" + "* Repos:*\n"
-            for i in range(len(usr_data)):
-                reply_text += (
-                    f"- [{usr_data[i]['name']}]({usr_data[i]['html_url']})\n"
-                )
-            message.reply_text(
-                reply_text,
-                parse_mode=ParseMode.MARKDOWN,
-                disable_web_page_preview=True,
-            )
-        else:
+        if len(usr_data) == 0:
             return message.reply_text(
                 "*User/Organization not found!* \nMake sure to enter a valid username.",
                 parse_mode=ParseMode.MARKDOWN,
             )
+        reply_text = f"*{user}*" + "'s" + "* Repos:*\n"
+        for i in range(len(usr_data)):
+            reply_text += (
+                f"- [{usr_data[i]['name']}]({usr_data[i]['html_url']})\n"
+            )
+        message.reply_text(
+            reply_text,
+            parse_mode=ParseMode.MARKDOWN,
+            disable_web_page_preview=True,
+        )
     else:
         user, repo = args
         rep_data = get(f"https://api.github.com/repos/{user}/{repo}").json()
@@ -211,15 +210,13 @@ def repo(update, context):
                         else:
                             text += f"\n*{x}:* `{y}`"
 
-            count = 0
-            for i in range(len(brc_data)):
-                count += 1
+            count = sum(1 for _ in range(len(brc_data)))
             text += f"\n*Branches:* `{count}`"
             text += f"\n*🍴 Forks:* `{rep_data['forks_count']}` | *🌟 Stars:* `{rep_data['stargazers_count']}` "
 
             chat = update.effective_chat
             dispatcher.bot.send_photo(
-                "{}".format(chat.id),
+                f"{chat.id}",
                 f"{rep_data['html_url']}",
                 caption=text,
                 parse_mode=ParseMode.MARKDOWN,
@@ -257,6 +254,7 @@ def repo(update, context):
                     ]
                 ),
             )
+
         except KeyError:
             return message.reply_text(
                 "*User/Organization not found!* \nMake sure to enter a valid username.",
@@ -281,10 +279,9 @@ def gitclone(update, context):
                 "*Username, repository name or branch not found!*",
                 parse_mode=ParseMode.MARKDOWN,
             )
-        else:
-            data = get(f"https://api.github.com/repos/{user}/{repo}").json()
-            # https://api.github.com/repos/{user}/{repo}/zipball/{branch}
-            archive = f"https://github.com/{user}/{repo}/archive/{branch}.zip"
+        data = get(f"https://api.github.com/repos/{user}/{repo}").json()
+        # https://api.github.com/repos/{user}/{repo}/zipball/{branch}
+        archive = f"https://github.com/{user}/{repo}/archive/{branch}.zip"
     elif len(args) == 2:
         try:
             user, repo = args

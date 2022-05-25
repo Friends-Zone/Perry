@@ -200,9 +200,7 @@ def gban(update, context):
     try:
         context.bot.kick_chat_member(chat.id, user_chat.id)
     except BadRequest as excp:
-        if excp.message in GBAN_ERRORS:
-            pass
-
+        pass
     sql.gban_user(user_id, user_chat.username or user_chat.first_name, reason)
 
 
@@ -227,8 +225,9 @@ def ungban(update, context):
     banner = update.effective_user  # type: Optional[User]
 
     message.reply_text(
-        "I'll give {} a second chance, globally.".format(user_chat.first_name)
+        f"I'll give {user_chat.first_name} a second chance, globally."
     )
+
 
     context.bot.sendMessage(
         MESSAGE_DUMP,
@@ -259,14 +258,9 @@ def ungban(update, context):
                 context.bot.unban_chat_member(chat_id, user_id)
 
         except BadRequest as excp:
-            if excp.message in UNGBAN_ERRORS:
-                pass
-            else:
-                message.reply_text("Could not un-gban due to: {}".format(excp.message))
-                context.bot.send_message(
-                    OWNER_ID,
-                    "Could not un-gban due to: {}".format(excp.message),
-                )
+            if excp.message not in UNGBAN_ERRORS:
+                message.reply_text(f"Could not un-gban due to: {excp.message}")
+                context.bot.send_message(OWNER_ID, f"Could not un-gban due to: {excp.message}")
                 return
         except TelegramError:
             pass
@@ -275,11 +269,10 @@ def ungban(update, context):
 
     context.bot.sendMessage(
         MESSAGE_DUMP,
-        "User {} has been successfully un-gbanned!".format(
-            mention_html(user_chat.id, user_chat.first_name)
-        ),
+        f"User {mention_html(user_chat.id, user_chat.first_name)} has been successfully un-gbanned!",
         parse_mode=ParseMode.HTML,
     )
+
     message.reply_text("Person has been un-gbanned.")
 
 
@@ -311,17 +304,14 @@ def gbanlist(update, context):
 def check_and_ban(update, user_id, should_message=True):
 
     try:
-        spmban = spamwtc.get_ban(int(user_id))
-        if spmban:
+        if spmban := spamwtc.get_ban(int(user_id)):
             update.effective_chat.kick_member(user_id)
             if should_message:
                 update.effective_message.reply_text(
                     f"This person has been detected as spambot by @SpamWatch and has been removed!\nReason: <code>{spmban.reason}</code>",
                     parse_mode=ParseMode.HTML,
                 )
-                return
-            else:
-                return
+            return
     except Exception:
         pass
 
@@ -343,25 +333,28 @@ def check_and_ban(update, user_id, should_message=True):
 def enforce_gban(update, context):
     # Not using @restrict handler to avoid spamming - just ignore if cant gban.
     if (
-        sql.does_chat_gban(update.effective_chat.id)
-        and update.effective_chat.get_member(context.bot.id).can_restrict_members
+        not sql.does_chat_gban(update.effective_chat.id)
+        or not update.effective_chat.get_member(
+            context.bot.id
+        ).can_restrict_members
     ):
-        user = update.effective_user
-        chat = update.effective_chat
-        msg = update.effective_message
+        return
+    user = update.effective_user
+    chat = update.effective_chat
+    msg = update.effective_message
 
+    if user and not is_user_admin(chat, user.id):
+        check_and_ban(update, user.id)
+
+    if msg.new_chat_members:
+        new_members = update.effective_message.new_chat_members
+        for mem in new_members:
+            check_and_ban(update, mem.id)
+
+    if msg.reply_to_message:
+        user = msg.reply_to_message.from_user
         if user and not is_user_admin(chat, user.id):
-            check_and_ban(update, user.id)
-
-        if msg.new_chat_members:
-            new_members = update.effective_message.new_chat_members
-            for mem in new_members:
-                check_and_ban(update, mem.id)
-
-        if msg.reply_to_message:
-            user = msg.reply_to_message.from_user
-            if user and not is_user_admin(chat, user.id):
-                check_and_ban(update, user.id, should_message=False)
+            check_and_ban(update, user.id, should_message=False)
 
 
 @user_admin
@@ -393,7 +386,7 @@ def gbanstat(update, context):
 
 
 def __stats__():
-    return "× {} gbanned users.".format(sql.num_gbanned_users())
+    return f"× {sql.num_gbanned_users()} gbanned users."
 
 
 def __user_info__(user_id):
@@ -419,7 +412,7 @@ def __migrate__(old_chat_id, new_chat_id):
 
 
 def __chat_settings__(chat_id, user_id):
-    return "This chat is enforcing *gbans*: `{}`.".format(sql.does_chat_gban(chat_id))
+    return f"This chat is enforcing *gbans*: `{sql.does_chat_gban(chat_id)}`."
 
 
 __help__ = """

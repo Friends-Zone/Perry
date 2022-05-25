@@ -41,33 +41,29 @@ def report_setting(update, context):
                 msg.reply_text("Turned off reporting! You wont get any reports.")
         else:
             msg.reply_text(
-                "Your current report preference is: `{}`".format(
-                    sql.user_should_report(chat.id)
-                ),
+                f"Your current report preference is: `{sql.user_should_report(chat.id)}`",
                 parse_mode=ParseMode.MARKDOWN,
             )
 
-    else:
-        if len(args) >= 1:
-            if args[0] in ("yes", "on"):
-                sql.set_chat_setting(chat.id, True)
-                msg.reply_text(
-                    "Turned on reporting! Admins who have turned on reports will be notified when /report "
-                    "or @admin are called."
-                )
 
-            elif args[0] in ("no", "off"):
-                sql.set_chat_setting(chat.id, False)
-                msg.reply_text(
-                    "Turned off reporting! No admins will be notified on /report or @admin."
-                )
-        else:
+    elif len(args) >= 1:
+        if args[0] in ("yes", "on"):
+            sql.set_chat_setting(chat.id, True)
             msg.reply_text(
-                "This chat's current setting is: `{}`".format(
-                    sql.chat_should_report(chat.id)
-                ),
-                parse_mode=ParseMode.MARKDOWN,
+                "Turned on reporting! Admins who have turned on reports will be notified when /report "
+                "or @admin are called."
             )
+
+        elif args[0] in ("no", "off"):
+            sql.set_chat_setting(chat.id, False)
+            msg.reply_text(
+                "Turned off reporting! No admins will be notified on /report or @admin."
+            )
+    else:
+        msg.reply_text(
+            f"This chat's current setting is: `{sql.chat_should_report(chat.id)}`",
+            parse_mode=ParseMode.MARKDOWN,
+        )
 
 
 @user_not_admin
@@ -85,7 +81,7 @@ def report(update, context) -> str:
         messages = update.effective_message
 
         isadmeme = chat.get_member(reported_user.id).status
-        if isadmeme == "administrator" or isadmeme == "creator":
+        if isadmeme in ["administrator", "creator"]:
             return ""  # No point of reporting admins!
 
         if user.id == reported_user.id:
@@ -161,12 +157,8 @@ def report(update, context) -> str:
                 except Unauthorized:
                     pass
                 except BadRequest as excp:  # TODO: cleanup exceptions
-                    if excp.message == "Message_id_invalid":
-                        pass
-                    else:
-                        LOGGER.exception(
-                            "Exception while reporting user " + excp.message
-                        )
+                    if excp.message != "Message_id_invalid":
+                        LOGGER.exception(f"Exception while reporting user {excp.message}")
 
         message.reply_to_message.reply_text(reported, parse_mode=ParseMode.HTML)
         return msg
@@ -221,9 +213,7 @@ def __migrate__(old_chat_id, new_chat_id):
 
 
 def __chat_settings__(chat_id, user_id):
-    return "This chat is setup to send user reports to admins, via /report and @admin: `{}`".format(
-        sql.chat_should_report(chat_id)
-    )
+    return f"This chat is setup to send user reports to admins, via /report and @admin: `{sql.chat_should_report(chat_id)}`"
 
 
 def __user_settings__(user_id):

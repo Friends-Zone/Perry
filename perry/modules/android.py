@@ -50,17 +50,18 @@ def twrp(update, context):
     if len(args) == 0:
         reply = "No codename provided, write a codename for fetching informations."
         del_msg = update.effective_message.reply_text(
-            "{}".format(reply),
-            parse_mode=ParseMode.MARKDOWN,
+            f"{reply}", parse_mode=ParseMode.MARKDOWN
         )
+
         time.sleep(5)
         try:
             del_msg.delete()
             update.effective_message.delete()
         except BadRequest as err:
-            if (err.message == "Message to delete not found") or (
-                err.message == "Message can't be deleted"
-            ):
+            if err.message in [
+                "Message to delete not found",
+                "Message can't be deleted",
+            ]:
                 return
 
     _device = " ".join(args)
@@ -68,18 +69,20 @@ def twrp(update, context):
     if url.status_code == 404:
         reply = f"Couldn't find twrp downloads for {_device}!\n"
         del_msg = update.effective_message.reply_text(
-            "{}".format(reply),
+            f"{reply}",
             parse_mode=ParseMode.MARKDOWN,
             disable_web_page_preview=True,
         )
+
         time.sleep(5)
         try:
             del_msg.delete()
             update.effective_message.delete()
         except BadRequest as err:
-            if (err.message == "Message to delete not found") or (
-                err.message == "Message can't be deleted"
-            ):
+            if err.message in [
+                "Message to delete not found",
+                "Message can't be deleted",
+            ]:
                 return
     else:
         reply = f"*Latest Official TWRP for {_device}*\n"
@@ -104,7 +107,7 @@ def twrp(update, context):
             reply += f"[{dl_file}]({dl_link}) - {size}\n"
 
         update.message.reply_text(
-            "{}".format(reply),
+            f"{reply}",
             parse_mode=ParseMode.MARKDOWN,
             disable_web_page_preview=True,
         )

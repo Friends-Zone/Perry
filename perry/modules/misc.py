@@ -49,8 +49,7 @@ from perry.modules.helper_funcs.misc import HasNextWrapper
 @typing_action
 def get_id(update, context):
     args = context.args
-    user_id = extract_user(update.effective_message, args)
-    if user_id:
+    if user_id := extract_user(update.effective_message, args):
         if (
             update.effective_message.reply_to_message
             and update.effective_message.reply_to_message.forward_from
@@ -69,22 +68,21 @@ def get_id(update, context):
         else:
             user = context.bot.get_chat(user_id)
             update.effective_message.reply_text(
-                "{}'s id is `{}`.".format(
-                    escape_markdown(user.first_name), user.id
-                ),
+                f"{escape_markdown(user.first_name)}'s id is `{user.id}`.",
                 parse_mode=ParseMode.MARKDOWN,
             )
+
     else:
         chat = update.effective_chat  # type: Optional[Chat]
         if chat.type == "private":
             update.effective_message.reply_text(
-                "Your id is `{}`.".format(chat.id),
-                parse_mode=ParseMode.MARKDOWN,
+                f"Your id is `{chat.id}`.", parse_mode=ParseMode.MARKDOWN
             )
+
 
         else:
             update.effective_message.reply_text(
-                "This group's id is `{}`.".format(chat.id),
+                f"This group's id is `{chat.id}`.",
                 parse_mode=ParseMode.MARKDOWN,
             )
 
@@ -138,12 +136,9 @@ def info(update, context):
     )
 
     try:
-        sw = spamwtc.get_ban(int(user.id))
-        if sw:
+        if sw := spamwtc.get_ban(int(user.id)):
             text += "\n\n<b>This person is banned in Spamwatch!</b>"
             text += f"\nResason: <pre>{sw.reason}</pre>"
-        else:
-            pass
     except:
         pass  # Don't break on exceptions like if api is down?
 
@@ -170,7 +165,7 @@ def info(update, context):
 
     try:
         memstatus = chat.get_member(user.id).status
-        if memstatus == "administrator" or memstatus == "creator":
+        if memstatus in ["administrator", "creator"]:
             result = context.bot.get_chat_member(chat.id, user.id)
             if result.custom_title:
                 text += f"\n\nThis user has custom title <b>{result.custom_title}</b> in this chat."
@@ -281,7 +276,7 @@ def markdown_help(update, context):
 def wiki(update, context):
     kueri = re.split(pattern="wiki", string=update.effective_message.text)
     wikipedia.set_lang("en")
-    if len(str(kueri[1])) == 0:
+    if not str(kueri[1]):
         update.effective_message.reply_text("Enter keywords!")
     else:
         try:
@@ -449,9 +444,8 @@ def src(update, context):
 
 @typing_action
 def getlink(update, context):
-    args = context.args
     message = update.effective_message
-    if args:
+    if args := context.args:
         pattern = re.compile(r"-\d+")
     else:
         message.reply_text("You don't seem to be referring to any chats.")
@@ -514,10 +508,11 @@ def pyeval(update, context):
         try:
             context.bot.sendMessage(
                 msg.chat.id,
-                "<pre>" + escape(result) + "</pre>",
+                f"<pre>{escape(result)}</pre>",
                 reply_to_message_id=msg.message_id,
                 parse_mode=ParseMode.HTML,
             )
+
         except Exception as excp:
             if str(excp.message) == "Message must be non-empty":
                 return msg.reply_text("None")
@@ -541,9 +536,7 @@ def shell(update, context):
         )
         stdout, stderr = res.communicate()
         result = str(stdout.decode().strip()) + str(stderr.decode().strip())
-        rep.edit_text(
-            "<code>" + escape(result) + "</code>", parse_mode=ParseMode.HTML
-        )
+        rep.edit_text(f"<code>{escape(result)}</code>", parse_mode=ParseMode.HTML)
     except Exception as excp:
         if hasattr(excp, "message"):
             if str(excp.message) == "Message must be non-empty":

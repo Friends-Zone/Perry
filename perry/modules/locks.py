@@ -104,8 +104,6 @@ def restr_members(
     previews=False,
 ):
     for mem in members:
-        if mem.user in SUDO_USERS:
-            pass
         try:
             bot.restrict_chat_member(
                 chat_id,
@@ -161,15 +159,13 @@ def lock(update, context) -> str:
         if len(args) >= 1:
             ltype = args[0].lower()
             if ltype in LOCK_TYPES:
-                # Connection check
-                conn = connected(context.bot, update, chat, user.id, need_admin=True)
-                if conn:
+                if conn := connected(
+                    context.bot, update, chat, user.id, need_admin=True
+                ):
                     chat = dispatcher.bot.getChat(conn)
                     chat_id = conn
                     chat_name = chat.title
-                    text = "Locked all {} messages for non-admins in {}!".format(
-                        ltype, chat_name
-                    )
+                    text = f"Locked all {ltype} messages for non-admins in {chat_name}!"
                 else:
                     if update.effective_message.chat.type == "private":
                         send_message(
@@ -180,7 +176,7 @@ def lock(update, context) -> str:
                     chat = update.effective_chat
                     chat_id = update.effective_chat.id
                     chat_name = update.effective_message.chat.title
-                    text = "Locked all {} messages for non-admins!".format(ltype)
+                    text = f"Locked all {ltype} messages for non-admins!"
                 sql.update_lock(chat.id, ltype, locked=True)
                 send_message(update.effective_message, text, parse_mode="markdown")
 
@@ -196,15 +192,13 @@ def lock(update, context) -> str:
                 )
 
             elif ltype in LOCK_CHAT_RESTRICTION:
-                # Connection check
-                conn = connected(context.bot, update, chat, user.id, need_admin=True)
-                if conn:
+                if conn := connected(
+                    context.bot, update, chat, user.id, need_admin=True
+                ):
                     chat = dispatcher.bot.getChat(conn)
                     chat_id = conn
                     chat_name = chat.title
-                    text = "Locked {} for all non-admins in {}!".format(
-                        ltype, chat_name
-                    )
+                    text = f"Locked {ltype} for all non-admins in {chat_name}!"
                 else:
                     if update.effective_message.chat.type == "private":
                         send_message(
@@ -215,7 +209,7 @@ def lock(update, context) -> str:
                     chat = update.effective_chat
                     chat_id = update.effective_chat.id
                     chat_name = update.effective_message.chat.title
-                    text = "Locked {} for all non-admins!".format(ltype)
+                    text = f"Locked {ltype} for all non-admins!"
 
                 current_permission = context.bot.getChat(chat_id).permissions
                 context.bot.set_chat_permissions(
@@ -267,15 +261,13 @@ def unlock(update, context) -> str:
         if len(args) >= 1:
             ltype = args[0].lower()
             if ltype in LOCK_TYPES:
-                # Connection check
-                conn = connected(context.bot, update, chat, user.id, need_admin=True)
-                if conn:
+                if conn := connected(
+                    context.bot, update, chat, user.id, need_admin=True
+                ):
                     chat = dispatcher.bot.getChat(conn)
                     chat_id = conn
                     chat_name = chat.title
-                    text = "Unlocked {} messages for everyone in {}!".format(
-                        ltype, chat_name
-                    )
+                    text = f"Unlocked {ltype} messages for everyone in {chat_name}!"
                 else:
                     if update.effective_message.chat.type == "private":
                         send_message(
@@ -286,7 +278,7 @@ def unlock(update, context) -> str:
                     chat = update.effective_chat
                     chat_id = update.effective_chat.id
                     chat_name = update.effective_message.chat.title
-                    text = "Unlocked {} messages for everyone!".format(ltype)
+                    text = f"Unlocked {ltype} messages for everyone!"
                 sql.update_lock(chat.id, ltype, locked=False)
                 send_message(update.effective_message, text, parse_mode="markdown")
                 return (
@@ -301,13 +293,13 @@ def unlock(update, context) -> str:
                 )
 
             elif ltype in UNLOCK_CHAT_RESTRICTION:
-                # Connection check
-                conn = connected(context.bot, update, chat, user.id, need_admin=True)
-                if conn:
+                if conn := connected(
+                    context.bot, update, chat, user.id, need_admin=True
+                ):
                     chat = dispatcher.bot.getChat(conn)
                     chat_id = conn
                     chat_name = chat.title
-                    text = "Unlocked {} for everyone in {}!".format(ltype, chat_name)
+                    text = f"Unlocked {ltype} for everyone in {chat_name}!"
                 else:
                     if update.effective_message.chat.type == "private":
                         send_message(
@@ -318,7 +310,7 @@ def unlock(update, context) -> str:
                     chat = update.effective_chat
                     chat_id = update.effective_chat.id
                     chat_name = update.effective_message.chat.title
-                    text = "Unlocked {} for everyone!".format(ltype)
+                    text = f"Unlocked {ltype} for everyone!"
 
                 current_permission = context.bot.getChat(chat_id).permissions
                 context.bot.set_chat_permissions(
@@ -362,51 +354,51 @@ def del_lockables(update, context):
         if lockable == "rtl":
             if sql.is_locked(chat.id, lockable) and can_delete(chat, context.bot.id):
                 if message.caption:
-                    check = ad.detect_alphabet(u"{}".format(message.caption))
+                    check = ad.detect_alphabet(f"{message.caption}")
                     if "ARABIC" in check:
                         try:
                             message.delete()
                         except BadRequest as excp:
-                            if excp.message == "Message to delete not found":
-                                pass
-                            else:
+                            if excp.message != "Message to delete not found":
                                 LOGGER.exception("ERROR in lockables")
                         break
                 if message.text:
-                    check = ad.detect_alphabet(u"{}".format(message.text))
+                    check = ad.detect_alphabet(f"{message.text}")
                     if "ARABIC" in check:
                         try:
                             message.delete()
                         except BadRequest as excp:
-                            if excp.message == "Message to delete not found":
-                                pass
-                            else:
+                            if excp.message != "Message to delete not found":
                                 LOGGER.exception("ERROR in lockables")
                         break
             continue
         if lockable == "button":
-            if sql.is_locked(chat.id, lockable) and can_delete(chat, context.bot.id):
-                if message.reply_markup and message.reply_markup.inline_keyboard:
-                    try:
-                        message.delete()
-                    except BadRequest as excp:
-                        if excp.message == "Message to delete not found":
-                            pass
-                        else:
-                            LOGGER.exception("ERROR in lockables")
-                    break
+            if (
+                sql.is_locked(chat.id, lockable)
+                and can_delete(chat, context.bot.id)
+                and message.reply_markup
+                and message.reply_markup.inline_keyboard
+            ):
+                try:
+                    message.delete()
+                except BadRequest as excp:
+                    if excp.message != "Message to delete not found":
+                        LOGGER.exception("ERROR in lockables")
+                break
             continue
         if lockable == "inline":
-            if sql.is_locked(chat.id, lockable) and can_delete(chat, context.bot.id):
-                if message and message.via_bot:
-                    try:
-                        message.delete()
-                    except BadRequest as excp:
-                        if excp.message == "Message to delete not found":
-                            pass
-                        else:
-                            LOGGER.exception("ERROR in lockables")
-                    break
+            if (
+                sql.is_locked(chat.id, lockable)
+                and can_delete(chat, context.bot.id)
+                and message
+                and message.via_bot
+            ):
+                try:
+                    message.delete()
+                except BadRequest as excp:
+                    if excp.message != "Message to delete not found":
+                        LOGGER.exception("ERROR in lockables")
+                break
             continue
         if (
             filter(update)
@@ -435,9 +427,7 @@ def del_lockables(update, context):
                 try:
                     message.delete()
                 except BadRequest as excp:
-                    if excp.message == "Message to delete not found":
-                        pass
-                    else:
+                    if excp.message != "Message to delete not found":
                         LOGGER.exception("ERROR in lockables")
 
                 break

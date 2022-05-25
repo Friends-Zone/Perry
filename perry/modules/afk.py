@@ -23,11 +23,7 @@ AFK_REPLY_GROUP = 8
 
 def afk(update, context):
     args = update.effective_message.text.split(None, 1)
-    if len(args) >= 2:
-        reason = args[1]
-    else:
-        reason = ""
-
+    reason = args[1] if len(args) >= 2 else ""
     sql.set_afk(update.effective_user.id, reason)
     afkstr = random.choice(fun.AFK)
     update.effective_message.reply_text(afkstr.format(update.effective_user.first_name))
@@ -39,8 +35,7 @@ def no_longer_afk(update, context):
     if not user:  # ignore channels
         return
 
-    res = sql.rm_afk(user.id)
-    if res:
+    if res := sql.rm_afk(user.id):
         noafkstr = random.choice(fun.NOAFK)
         update.effective_message.reply_text(noafkstr.format(user.first_name))
 
@@ -67,7 +62,7 @@ def reply_afk(update, context):
                 try:
                     chat = context.bot.get_chat(user_id)
                 except BadRequest:
-                    print("Error in afk can't get user id {}".format(user_id))
+                    print(f"Error in afk can't get user id {user_id}")
                     return
                 fst_name = chat.first_name
 
@@ -93,11 +88,7 @@ def __user_info__(user_id):
     is_afk = sql.is_afk(user_id)
 
     text = "<b>Currently AFK</b>: {}"
-    if is_afk:
-        text = text.format("Yes")
-
-    else:
-        text = text.format("No")
+    text = text.format("Yes") if is_afk else text.format("No")
     return text
 
 

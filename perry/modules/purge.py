@@ -57,8 +57,11 @@ async def purge(event):
         await del_res.delete()
 
     except MessageDeleteForbiddenError:
-        text = "Failed to delete messages.\n"
-        text += "Selected messages may be too old or you haven't given me enough admin rights!"
+        text = (
+            "Failed to delete messages.\n"
+            + "Selected messages may be too old or you haven't given me enough admin rights!"
+        )
+
         del_res = await event.respond(text, parse_mode="md")
         await asyncio.sleep(5)
         await del_res.delete()
@@ -89,8 +92,11 @@ async def purgeme(event):
             await purged_msgs.delete()
 
     except MessageDeleteForbiddenError:
-        text = "Failed to delete messages.\n"
-        text += "Selected messages may be too old or you haven't given me enough admin rights!"
+        text = (
+            "Failed to delete messages.\n"
+            + "Selected messages may be too old or you haven't given me enough admin rights!"
+        )
+
         purged_msgs = await event.respond(text, parse_mode="md")
         await asyncio.sleep(5)
         await purged_msgs.delete()

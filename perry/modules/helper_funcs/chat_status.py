@@ -33,7 +33,7 @@ def is_user_admin(chat: Chat, user_id: int, member: ChatMember = None) -> bool:
         chat.type == "private"
         or user_id in SUDO_USERS
         or chat.all_members_are_administrators
-        or user_id in [777000, 1087968824]
+        or user_id in {777000, 1087968824}
     ):  # Count telegram and Group Anonymous as admin
         return True
 
@@ -74,7 +74,7 @@ def is_user_ban_protected(chat: Chat, user_id: int, member: ChatMember = None) -
         or user_id in SUDO_USERS
         or user_id in WHITELIST_USERS
         or chat.all_members_are_administrators
-        or user_id in [777000, 1087968824]
+        or user_id in {777000, 1087968824}
     ):  # Count telegram and Group Anonymous as admin
         return True
 
@@ -180,8 +180,6 @@ def user_not_admin(func):
 
         if user and not is_user_admin(chat, user.id):
             return func(update, context, *args, **kwargs)
-        if not user:
-            pass
 
     return is_not_admin
 
@@ -294,8 +292,9 @@ def user_can_ban(func):
         member = update.effective_chat.get_member(user)
 
         if (
-            not (member.can_restrict_members or member.status == "creator")
-            and not user in SUDO_USERS
+            not member.can_restrict_members
+            and member.status != "creator"
+            and user not in SUDO_USERS
         ):
             update.effective_message.reply_text(
                 "Sorry son, but you're not worthy to wield the banhammer."
@@ -310,15 +309,13 @@ def user_can_ban(func):
 def connection_status(func):
     @wraps(func)
     def connected_status(update: Update, context: CallbackContext, *args, **kwargs):
-        conn = connected(
+        if conn := connected(
             context.bot,
             update,
             update.effective_chat,
             update.effective_user.id,
             need_admin=False,
-        )
-
-        if conn:
+        ):
             chat = dispatcher.bot.getChat(conn)
             update.__setattr__("_effective_chat", chat)
             return func(update, context, *args, **kwargs)
